@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 // Register SuperAdmin
 export const createSuperAdmin = async (req, res) => {
     try {
-        const { username, password, name, email, managedDepartments, managedStations } = req.body;
+        const { username, password, name, email, managedDepartments, managedStations } = req.body || {};
 
         if (!username || !password || !name || !email) {
             return res.status(400).json({ 
@@ -64,7 +64,7 @@ export const createSuperAdmin = async (req, res) => {
 // Login SuperAdmin
 export const loginSuperAdmin = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { username, password } = req.body || {};
 
         if (!username || !password) {
             return res.status(400).json({ 
