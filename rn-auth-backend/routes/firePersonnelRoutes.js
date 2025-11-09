@@ -7,7 +7,9 @@ import {
     deleteFirePersonnel,
     getPersonnelByUnit,
     getPersonnelByDepartment,
-    getPersonnelByStation
+    getPersonnelByStation,
+    loginFirePersonnel,
+    logoutFirePersonnel
 } from '../controllers/firePersonnelController.js';
 
 const router = express.Router();
@@ -47,6 +49,9 @@ const router = express.Router();
  *         description: Server error
  */
 router.post('/', createFirePersonnel);
+
+router.post('/login', loginFirePersonnel);
+router.post('/logout', logoutFirePersonnel);
 
 /**
  * @swagger

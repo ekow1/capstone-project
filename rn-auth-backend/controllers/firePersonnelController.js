@@ -4,6 +4,7 @@ import Department from '../models/Department.js';
 import Station from '../models/Station.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Create FirePersonnel
 export const createFirePersonnel = async (req, res) => {
@@ -392,5 +393,111 @@ export const getPersonnelByStation = async (req, res) => {
             message: error.message
         });
     }
+};
+
+// Login Fire Personnel
+export const loginFirePersonnel = async (req, res) => {
+    try {
+        const { serviceNumber, password } = req.body || {};
+
+        if (!serviceNumber || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Service number and password are required'
+            });
+        }
+
+        const personnel = await FirePersonnel.findOne({ serviceNumber })
+            .select('+password +tempPassword +tempPasswordExpiry +passwordResetRequired')
+            .populate('rank')
+            .populate('department')
+            .populate('unit')
+            .populate('role')
+            .populate('station_id');
+
+        if (!personnel) {
+            return res.status(404).json({
+                success: false,
+                message: 'Fire personnel not found'
+            });
+        }
+
+        let isValidPassword = false;
+        let requiresPasswordReset = personnel.passwordResetRequired;
+
+        if (personnel.password) {
+            isValidPassword = await bcrypt.compare(password, personnel.password);
+        }
+
+        if (!isValidPassword && personnel.tempPassword) {
+            // Check temp password expiry
+            if (personnel.tempPasswordExpiry && personnel.tempPasswordExpiry < new Date()) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Temporary password has expired. Please request a new one.'
+                });
+            }
+            isValidPassword = await bcrypt.compare(password, personnel.tempPassword);
+            requiresPasswordReset = true;
+        }
+
+        if (!isValidPassword) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
+        }
+
+        const token = jwt.sign(
+            {
+                id: personnel._id,
+                serviceNumber: personnel.serviceNumber,
+                role: 'fire_personnel'
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.cookie('fire_personnel_token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        const responseData = personnel.toObject();
+        delete responseData.password;
+        delete responseData.tempPassword;
+        delete responseData.tempPasswordExpiry;
+
+        res.status(200).json({
+            success: true,
+            message: requiresPasswordReset
+                ? 'Login successful. Please reset your password.'
+                : 'Login successful.',
+            token,
+            requiresPasswordReset,
+            data: responseData
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Logout Fire Personnel
+export const logoutFirePersonnel = (req, res) => {
+    res.clearCookie('fire_personnel_token', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+    });
 };
 
