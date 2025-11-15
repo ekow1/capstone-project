@@ -292,7 +292,7 @@ export const createFireReport = async (req, res) => {
         await fireReport.populate([
             { path: 'station', select: 'name location lat lng phone_number placeId' },
             { path: 'department', select: 'name description' },
-            { path: 'unit', select: 'name shift isActive' },
+            { path: 'unit', select: 'name isActive' },
             { path: 'referredStationDetails', select: 'name location lat lng phone_number placeId' },
             { 
                 path: 'reporterDetails', 
@@ -754,7 +754,7 @@ export const dispatchFireReport = async (req, res) => {
         await fireReport.populate([
             { path: 'station', select: 'name location lat lng phone_number placeId' },
             { path: 'department', select: 'name description' },
-            { path: 'unit', select: 'name shift isActive' },
+            { path: 'unit', select: 'name isActive' },
             { path: 'reporterDetails', select: 'name phone email' }
         ]);
 
@@ -846,7 +846,7 @@ export const declineFireReport = async (req, res) => {
         await fireReport.populate([
             { path: 'station', select: 'name location lat lng phone_number placeId' },
             { path: 'department', select: 'name description' },
-            { path: 'unit', select: 'name shift isActive' },
+            { path: 'unit', select: 'name isActive' },
             { path: 'reporterDetails', select: 'name phone email' }
         ]);
 
@@ -977,7 +977,7 @@ export const referFireReport = async (req, res) => {
         await fireReport.populate([
             { path: 'station', select: 'name location lat lng phone_number placeId' },
             { path: 'department', select: 'name description' },
-            { path: 'unit', select: 'name shift isActive' },
+            { path: 'unit', select: 'name isActive' },
             { path: 'referredStationDetails', select: 'name location lat lng phone_number placeId' },
             { path: 'reporterDetails', select: 'name phone email' }
         ]);

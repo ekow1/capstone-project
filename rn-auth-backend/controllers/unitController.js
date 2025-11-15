@@ -1,12 +1,11 @@
 import Unit from '../models/Unit.js';
 import Department from '../models/Department.js';
-import Group from '../models/Group.js';
 import mongoose from 'mongoose';
 
 // Create Unit
 export const createUnit = async (req, res) => {
     try {
-        const { name, color, department, groups, shift } = req.body;
+        const { name, color, department } = req.body;
 
         if (!name || !department) {
             return res.status(400).json({ 
@@ -15,58 +14,11 @@ export const createUnit = async (req, res) => {
             });
         }
 
-        // Check if department is Operations - shift is required for Operations units
-        const dept = await Department.findById(department);
-        if (dept && dept.name && dept.name.toLowerCase() === 'operations' && !shift) {
-            return res.status(400).json({
-                success: false,
-                message: 'Shift is required for Operations department units'
-            });
-        }
-
-        // Validate and format groups with unit color
-        let formattedGroups = [];
-        if (groups && Array.isArray(groups) && groups.length > 0) {
-            const unitColor = color || '#000000';
-            for (const groupItem of groups) {
-                let groupId;
-                let groupColor = unitColor;
-                
-                // Handle both object format {groupId, color} and simple ID format
-                if (typeof groupItem === 'object' && groupItem !== null) {
-                    groupId = groupItem.groupId || groupItem._id;
-                    // Use provided color or default to unit color
-                    groupColor = groupItem.color || unitColor;
-                } else {
-                    groupId = groupItem;
-                }
-                
-                if (!mongoose.Types.ObjectId.isValid(groupId)) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Invalid group ID: ${groupId}`
-                    });
-                }
-                const group = await Group.findById(groupId);
-                if (!group) {
-                    return res.status(404).json({
-                        success: false,
-                        message: `Group not found: ${groupId}`
-                    });
-                }
-                formattedGroups.push({
-                    groupId: groupId,
-                    color: groupColor
-                });
-            }
-        }
-
-        const unit = new Unit({ name, color, department, groups: formattedGroups, shift });
+        const unit = new Unit({ name, color, department });
         await unit.save();
 
         const populatedUnit = await Unit.findById(unit._id)
-            .populate('department')
-            .populate('groups.groupId');
+            .populate('department');
 
         res.status(201).json({ 
             success: true, 
@@ -92,7 +44,6 @@ export const getAllUnits = async (req, res) => {
     try {
         const units = await Unit.find()
             .populate('department')
-            .populate('groups.groupId')
             .sort({ name: 1 });
         
         res.status(200).json({ 
@@ -113,7 +64,6 @@ export const getUnitById = async (req, res) => {
     try {
         const unit = await Unit.findById(req.params.id)
             .populate('department')
-            .populate('groups.groupId')
             .populate('personnel');
 
         if (!unit) {
@@ -138,7 +88,7 @@ export const getUnitById = async (req, res) => {
 // Update Unit
 export const updateUnit = async (req, res) => {
     try {
-        const { name, color, department, groups, shift } = req.body;
+        const { name, color, department } = req.body;
 
         // Get current unit to check existing values
         const currentUnit = await Unit.findById(req.params.id);
@@ -149,76 +99,17 @@ export const updateUnit = async (req, res) => {
             });
         }
 
-        // Validate shift for Operations department
-        const deptId = department || currentUnit.department;
-        const dept = await Department.findById(deptId);
-        if (dept && dept.name && dept.name.toLowerCase() === 'operations') {
-            const shiftValue = shift !== undefined ? shift : currentUnit.shift;
-            if (!shiftValue) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Shift is required for Operations department units'
-                });
-            }
-        }
-
-        // Validate and format groups with unit color when groups are provided
-        const unitColor = color !== undefined ? color : currentUnit.color;
-        let formattedGroups = undefined;
-        
-        if (groups && Array.isArray(groups)) {
-            formattedGroups = [];
-            for (const groupItem of groups) {
-                let groupId;
-                let groupColor = unitColor || '#000000';
-                
-                // Handle both object format {groupId, color} and simple ID format
-                if (typeof groupItem === 'object' && groupItem !== null) {
-                    groupId = groupItem.groupId || groupItem._id;
-                    // Use provided color or default to unit color
-                    groupColor = groupItem.color || unitColor;
-                } else {
-                    groupId = groupItem;
-                }
-                
-                if (!mongoose.Types.ObjectId.isValid(groupId)) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Invalid group ID: ${groupId}`
-                    });
-                }
-                const group = await Group.findById(groupId);
-                if (!group) {
-                    return res.status(404).json({
-                        success: false,
-                        message: `Group not found: ${groupId}`
-                    });
-                }
-                formattedGroups.push({
-                    groupId: groupId,
-                    color: groupColor
-                });
-            }
-        } else if (color && currentUnit.groups && currentUnit.groups.length > 0) {
-            // If color is updated but groups aren't, update existing groups' colors
-            formattedGroups = currentUnit.groups.map(groupObj => ({
-                groupId: groupObj.groupId || groupObj,
-                color: unitColor
-            }));
-        }
-
-        const updateData = { name, color, department, shift };
-        if (formattedGroups !== undefined) {
-            updateData.groups = formattedGroups;
-        }
+        const updateData = {};
+        if (name !== undefined) updateData.name = name;
+        if (color !== undefined) updateData.color = color;
+        if (department !== undefined) updateData.department = department;
 
         const unit = await Unit.findByIdAndUpdate(
             req.params.id,
             updateData,
             { new: true, runValidators: true }
         )
-        .populate('department')
-        .populate('groups.groupId');
+        .populate('department');
 
         if (!unit) {
             return res.status(404).json({ 
@@ -275,7 +166,6 @@ export const getUnitsByDepartment = async (req, res) => {
     try {
         const units = await Unit.find({ department: req.params.departmentId })
             .populate('department')
-            .populate('groups.groupId')
             .sort({ name: 1 });
         
         res.status(200).json({ 
@@ -298,8 +188,7 @@ export const activateUnit = async (req, res) => {
 
         // Find the unit
         const unit = await Unit.findById(unitId)
-            .populate('department')
-            .populate('groups.groupId');
+            .populate('department');
         
         if (!unit) {
             return res.status(404).json({
@@ -339,9 +228,6 @@ export const activateUnit = async (req, res) => {
         unit.activatedAt = new Date();
         await unit.save();
 
-        // Populate after save
-        await unit.populate('groups.groupId');
-
         res.status(200).json({
             success: true,
             message: 'Unit activated successfully',
@@ -362,8 +248,7 @@ export const deactivateUnit = async (req, res) => {
 
         // Find the unit first to check activation time
         const unit = await Unit.findById(unitId)
-            .populate('department')
-            .populate('groups.groupId');
+            .populate('department');
 
         if (!unit) {
             return res.status(404).json({
@@ -380,8 +265,7 @@ export const deactivateUnit = async (req, res) => {
                 { isActive: false, activatedAt: null },
                 { new: true, runValidators: true }
             )
-            .populate('department')
-            .populate('groups.groupId');
+            .populate('department');
 
             return res.status(200).json({
                 success: true,
@@ -414,8 +298,7 @@ export const deactivateUnit = async (req, res) => {
             { isActive: false, activatedAt: null },
             { new: true, runValidators: true }
         )
-        .populate('department')
-        .populate('groups.groupId');
+        .populate('department');
 
         res.status(200).json({
             success: true,

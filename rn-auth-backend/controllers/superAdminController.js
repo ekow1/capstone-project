@@ -30,16 +30,15 @@ export const createSuperAdmin = async (req, res) => {
             password: hashedPassword,
             name,
             email,
-            managedDepartments,
-            managedStations,
+            managedDepartments: managedDepartments || [],
+            managedStations: managedStations || [],
             role: 'super_admin'
         });
         await superAdmin.save();
 
         // Return admin data without password
         const adminData = await SuperAdmin.findById(superAdmin._id)
-            .select('-password')
-            .populate('managedDepartments');
+            .select('-password');
 
         res.status(201).json({ 
             success: true, 
@@ -110,14 +109,13 @@ export const loginSuperAdmin = async (req, res) => {
 
         // Return token and admin data without password
         const adminData = await SuperAdmin.findById(admin._id)
-            .select('-password')
-            .populate('managedDepartments');
-
+            .select('-password');
+        
         res.cookie('admin_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'none',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            secure: false,            // ❌ disable HTTPS-only for localhost
+            sameSite: 'lax',          // ✅ allow cookies over HTTP (works in local dev)
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
         res.status(200).json({ 
@@ -134,6 +132,20 @@ export const loginSuperAdmin = async (req, res) => {
     }
 };
 
+// Logout SuperAdmin
+export const logoutSuperAdmin = (req, res) => {
+    res.clearCookie('admin_token', {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax'
+    });
+
+    res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+    });
+};
+
 // Get All SuperAdmins
 export const getAllSuperAdmins = async (req, res) => {
     try {
@@ -144,7 +156,6 @@ export const getAllSuperAdmins = async (req, res) => {
 
         const admins = await SuperAdmin.find(filter)
             .select('-password')
-            .populate('managedDepartments')
             .sort({ name: 1 });
         
         res.status(200).json({ 
@@ -164,8 +175,7 @@ export const getAllSuperAdmins = async (req, res) => {
 export const getSuperAdminById = async (req, res) => {
     try {
         const admin = await SuperAdmin.findById(req.params.id)
-            .select('-password')
-            .populate('managedDepartments');
+            .select('-password');
 
         if (!admin) {
             return res.status(404).json({ 
@@ -216,8 +226,7 @@ export const updateSuperAdmin = async (req, res) => {
             updates,
             { new: true, runValidators: true }
         )
-        .select('-password')
-        .populate('managedDepartments');
+        .select('-password');
 
         if (!admin) {
             return res.status(404).json({ 
@@ -334,8 +343,7 @@ export const addManagedDepartment = async (req, res) => {
             { $addToSet: { managedDepartments: departmentId } },
             { new: true }
         )
-        .select('-password')
-        .populate('managedDepartments');
+        .select('-password');
 
         if (!admin) {
             return res.status(404).json({ 
@@ -367,8 +375,7 @@ export const removeManagedDepartment = async (req, res) => {
             { $pull: { managedDepartments: departmentId } },
             { new: true }
         )
-        .select('-password')
-        .populate('managedDepartments');
+        .select('-password');
 
         if (!admin) {
             return res.status(404).json({ 

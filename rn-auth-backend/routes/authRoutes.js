@@ -2,6 +2,7 @@ import express from 'express';
 import { 
     register, 
     login, 
+    logout,
     sendRegistrationOTP, 
     forgotPassword, 
     resetPassword
@@ -189,6 +190,32 @@ router.post('/register', register);
  *               message: "Internal server error"
  */
 router.post('/login', login);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Authentication]
+ *     description: Logout a user by clearing the authentication cookie
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
+ *       500:
+ *         description: Server error
+ */
+router.post('/logout', logout);
 
 // OTP-based Authentication Routes
 

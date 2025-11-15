@@ -62,17 +62,36 @@ const stationSchema = new mongoose.Schema({
 stationSchema.virtual('departments', {
     ref: 'Department',
     localField: '_id',
-    foreignField: 'station_id'
+    foreignField: 'station_id',
+    options: { sort: { name: 1 } }
 });
 
 // Virtual for personnel in this station
 stationSchema.virtual('personnel', {
     ref: 'FirePersonnel',
     localField: '_id',
-    foreignField: 'station_id'
+    foreignField: 'station_id',
+    options: { sort: { name: 1 } }
 });
 
-// Index for efficient queries (call_sign already has unique index)
+// Virtual for station admins in this station
+stationSchema.virtual('stationAdmins', {
+    ref: 'StationAdmin',
+    localField: '_id',
+    foreignField: 'station_id',
+    options: { 
+        sort: { name: 1 },
+        match: { isActive: true } // Only active admins by default
+    }
+});
+
+// Indexes for efficient queries
 stationSchema.index({ region: 1 });
+stationSchema.index({ lat: 1, lng: 1 }); // Compound index for coordinate queries
+stationSchema.index({ phone_number: 1 }); // Index for phone number lookups
+// Note: placeId already has unique index from schema definition, don't duplicate
+stationSchema.index({ name: 1, region: 1 }); // Compound index for name + region queries
+// Note: For geospatial queries ($near, $geoWithin), you would need to add a GeoJSON location field
+// For now, the compound index on lat/lng will handle coordinate-based queries efficiently
 
 export default mongoose.model('Station', stationSchema);

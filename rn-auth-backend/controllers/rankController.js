@@ -3,16 +3,47 @@ import Rank from '../models/Rank.js';
 // Create Rank
 export const createRank = async (req, res) => {
     try {
-        const { name, initials, level, description } = req.body;
+        const { name, initials, level, group, gender, description } = req.body;
 
-        if (!name || !initials) {
+        if (!name || !initials || !group) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Rank name and initials are required' 
+                message: 'Rank name, initials, and group are required' 
             });
         }
 
-        const rank = new Rank({ name, initials: initials.toUpperCase(), level, description });
+        // Validate group
+        if (!['junior', 'senior'].includes(group)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Group must be either "junior" or "senior"' 
+            });
+        }
+
+        // Validate gender for junior ranks
+        if (group === 'junior' && !gender) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Gender is required for junior ranks' 
+            });
+        }
+
+        // Senior ranks should not have gender
+        if (group === 'senior' && gender) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Senior ranks should not have a gender specified' 
+            });
+        }
+
+        const rank = new Rank({ 
+            name, 
+            initials: initials.toUpperCase(), 
+            level, 
+            group,
+            gender: group === 'senior' ? null : gender,
+            description 
+        });
         await rank.save();
 
         res.status(201).json({ 
@@ -37,7 +68,32 @@ export const createRank = async (req, res) => {
 // Get All Ranks
 export const getAllRanks = async (req, res) => {
     try {
-        const ranks = await Rank.find().sort({ level: -1, name: 1 });
+        const { group, gender } = req.query;
+        const filter = {};
+
+        // Filter by group if provided
+        if (group) {
+            if (!['junior', 'senior'].includes(group)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Group must be either "junior" or "senior"' 
+                });
+            }
+            filter.group = group;
+        }
+
+        // Filter by gender if provided
+        if (gender) {
+            if (!['male', 'female'].includes(gender)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Gender must be either "male" or "female"' 
+                });
+            }
+            filter.gender = gender;
+        }
+
+        const ranks = await Rank.find(filter).sort({ level: 1, name: 1 });
         
         res.status(200).json({ 
             success: true, 
@@ -79,11 +135,51 @@ export const getRankById = async (req, res) => {
 // Update Rank
 export const updateRank = async (req, res) => {
     try {
-        const { name, initials, level, description } = req.body;
+        const { name, initials, level, group, gender, description } = req.body;
         const updates = { name, level, description };
         
         if (initials) {
             updates.initials = initials.toUpperCase();
+        }
+
+        if (group) {
+            // Validate group
+            if (!['junior', 'senior'].includes(group)) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Group must be either "junior" or "senior"' 
+                });
+            }
+            updates.group = group;
+
+            // Validate gender based on group
+            if (group === 'junior' && !gender) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Gender is required for junior ranks' 
+                });
+            }
+            if (group === 'senior') {
+                updates.gender = null;
+            } else if (gender) {
+                updates.gender = gender;
+            }
+        } else if (gender) {
+            // If updating gender without group, check existing rank
+            const existingRank = await Rank.findById(req.params.id);
+            if (!existingRank) {
+                return res.status(404).json({ 
+                    success: false, 
+                    message: 'Rank not found' 
+                });
+            }
+            if (existingRank.group === 'senior') {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Senior ranks cannot have a gender specified' 
+                });
+            }
+            updates.gender = gender;
         }
 
         const rank = await Rank.findByIdAndUpdate(

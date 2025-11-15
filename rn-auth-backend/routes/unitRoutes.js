@@ -142,22 +142,9 @@ router.get('/:id', getUnitById);
  *                 type: string
  *               color:
  *                 type: string
- *               groups:
- *                 type: array
- *                 description: Array of group assignments. Can be group IDs (uses unit color) or objects {groupId, color}
- *                 items:
- *                   oneOf:
- *                     - type: string
- *                       description: Group ID (color defaults to unit color)
- *                     - type: object
- *                       properties:
- *                         groupId:
- *                           type: string
- *                         color:
- *                           type: string
- *               shift:
+ *               department:
  *                 type: string
- *                 description: Shift identifier (required for Operations department units)
+ *                 description: Department ID
  *     responses:
  *       200:
  *         description: Unit updated successfully

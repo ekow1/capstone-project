@@ -15,25 +15,6 @@ const unitSchema = new mongoose.Schema({
         ref: 'Department',
         required: [true, 'Department is required']
     },
-    groups: [{
-        groupId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Group',
-            required: true
-        },
-        color: {
-            type: String,
-            required: true,
-            default: '#000000',
-            description: 'Group color for this unit'
-        }
-    }],
-    shift: {
-        type: String,
-        trim: true,
-        required: false,
-        description: 'Shift identifier (e.g., "Day", "Night", "A", "B"). Required for Operations department units.'
-    },
     isActive: {
         type: Boolean,
         default: false,
@@ -54,14 +35,15 @@ const unitSchema = new mongoose.Schema({
 unitSchema.virtual('personnel', {
     ref: 'FirePersonnel',
     localField: '_id',
-    foreignField: 'unit'
+    foreignField: 'unit',
+    options: { sort: { name: 1 } }
 });
 
-// Compound index for unique unit per department
-unitSchema.index({ name: 1, department: 1 }, { unique: true });
-
-// Index for active unit queries
-unitSchema.index({ department: 1, isActive: 1 });
+// Indexes for efficient queries
+unitSchema.index({ name: 1, department: 1 }, { unique: true }); // Compound unique index
+unitSchema.index({ department: 1, isActive: 1 }); // Compound index for active unit queries
+unitSchema.index({ department: 1 }); // Index for department-based queries
+unitSchema.index({ isActive: 1, activatedAt: 1 }); // Compound index for active unit queries with activation time
 
 export default mongoose.model('Unit', unitSchema);
 

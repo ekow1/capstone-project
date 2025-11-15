@@ -18,7 +18,7 @@ A comprehensive backend API for managing Ghana National Fire Service stations, d
 - **Station Management**: Complete CRUD operations with intelligent upsert functionality
 - **Department Management**: Station-based department organization
 - **Personnel Management**: Fire service personnel with dual reference structure
-- **Fire Service Entities**: Ranks, Roles, Units, and Super Admin management
+- **Fire Service Entities**: Ranks, Roles, Units, Super Admin, and Station Admin management
 - **Smart Duplicate Detection**: Prevents duplicate stations using coordinates, location, or phone number
 - **Bulk Operations**: Efficient handling of multiple stations/departments/personnel
 - **Data Validation**: Comprehensive validation with meaningful error messages
@@ -108,6 +108,10 @@ Tokens are valid for 24 hours after login.
       {
         name: 'Super Admin',
         description: 'Super administrator management with authentication and department/station management capabilities.',
+      },
+      {
+        name: 'Station Admin',
+        description: 'Station administrator management with authentication and station-specific management capabilities.',
       },
       {
         name: 'Fire Reports',
@@ -645,6 +649,13 @@ Tokens are valid for 24 hours after login.
                 $ref: '#/components/schemas/FirePersonnel',
               },
             },
+            stationAdmins: {
+              type: 'array',
+              description: 'Station admins for this station',
+              items: {
+                $ref: '#/components/schemas/StationAdmin',
+              },
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
@@ -827,6 +838,10 @@ Tokens are valid for 24 hours after login.
               description: 'Department description',
               example: 'Handles emergency response and fire fighting operations',
             },
+            station_id: {
+              $ref: '#/components/schemas/Station',
+              description: 'Station this department belongs to',
+            },
             units: {
               type: 'array',
               description: 'Units in this department',
@@ -856,7 +871,7 @@ Tokens are valid for 24 hours after login.
             },
             serviceNumber: {
               type: 'string',
-              description: 'Unique service number',
+              description: 'Unique service number (used for login)',
               example: 'GFS-2024-001',
             },
             name: {
@@ -867,11 +882,13 @@ Tokens are valid for 24 hours after login.
             rank: {
               $ref: '#/components/schemas/Rank',
             },
-            department: {
-              $ref: '#/components/schemas/Department',
-            },
             unit: {
               $ref: '#/components/schemas/Unit',
+              description: 'Unit (optional)',
+            },
+            department: {
+              $ref: '#/components/schemas/Department',
+              description: 'Department (required)',
             },
             role: {
               $ref: '#/components/schemas/Role',
@@ -913,28 +930,6 @@ Tokens are valid for 24 hours after login.
             },
             department: {
               $ref: '#/components/schemas/Department',
-            },
-            groups: {
-              type: 'array',
-              description: 'Array of group assignments. Each group has groupId and color (unit-specific).',
-              items: {
-                type: 'object',
-                properties: {
-                  groupId: {
-                    $ref: '#/components/schemas/Group',
-                  },
-                  color: {
-                    type: 'string',
-                    description: 'Group color for this unit',
-                    example: '#FF0000',
-                  },
-                },
-              },
-            },
-            shift: {
-              type: 'string',
-              description: 'Shift identifier (e.g., "Day", "Night", "A", "B"). Required for Operations department units.',
-              example: 'Day',
             },
             isActive: {
               type: 'boolean',
@@ -1026,6 +1021,13 @@ Tokens are valid for 24 hours after login.
               type: 'string',
               description: 'Description of the rank',
               example: 'Fire Chief responsible for overall operations',
+            },
+            personnel: {
+              type: 'array',
+              description: 'Fire personnel with this rank',
+              items: {
+                $ref: '#/components/schemas/FirePersonnel',
+              },
             },
             createdAt: {
               type: 'string',
@@ -1119,20 +1121,89 @@ Tokens are valid for 24 hours after login.
             },
           },
         },
+        StationAdmin: {
+          type: 'object',
+          properties: {
+            _id: {
+              type: 'string',
+              description: 'Station Admin ID',
+              example: '507f1f77bcf86cd799439011',
+            },
+            username: {
+              type: 'string',
+              description: 'Admin username',
+              example: 'station_admin1',
+            },
+            name: {
+              type: 'string',
+              description: 'Admin full name',
+              example: 'John Doe',
+            },
+            email: {
+              type: 'string',
+              description: 'Admin email',
+              example: 'john.doe@station1.gov.gh',
+            },
+            station_id: {
+              oneOf: [
+                {
+                  type: 'string',
+                  description: 'Station ID',
+                  example: '507f1f77bcf86cd799439012',
+                },
+                {
+                  $ref: '#/components/schemas/Station',
+                },
+              ],
+              description: 'Station this admin manages',
+            },
+            role: {
+              type: 'string',
+              enum: ['station_admin'],
+              description: 'Admin role',
+              example: 'station_admin',
+            },
+            isActive: {
+              type: 'boolean',
+              description: 'Admin account status',
+              example: true,
+            },
+            passwordResetRequired: {
+              type: 'boolean',
+              description: 'Whether the admin needs to reset their password (true if using temp password)',
+              example: true,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Creation timestamp',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update timestamp',
+            },
+          },
+        },
         // Fire Service Request/Response Schemas
         DepartmentCreateRequest: {
           type: 'object',
-          required: ['name'],
+          required: ['name', 'station_id'],
           properties: {
             name: {
               type: 'string',
-              description: 'Department name (must be unique)',
+              description: 'Department name (must be unique per station)',
               example: 'Operations',
             },
             description: {
               type: 'string',
               description: 'Department description',
               example: 'Handles emergency response and fire fighting operations',
+            },
+            station_id: {
+              type: 'string',
+              description: 'Station ID (required)',
+              example: '507f1f77bcf86cd799439011',
             },
           },
         },
@@ -1154,10 +1225,11 @@ Tokens are valid for 24 hours after login.
         },
         FirePersonnelCreateRequest: {
           type: 'object',
+          required: ['serviceNumber', 'station_id', 'department'],
           properties: {
             serviceNumber: {
               type: 'string',
-              description: 'Unique service number',
+              description: 'Unique service number (used for login)',
               example: 'GFS-2024-001',
             },
             name: {
@@ -1170,15 +1242,15 @@ Tokens are valid for 24 hours after login.
               description: 'Rank ID',
               example: '507f1f77bcf86cd799439011',
             },
-            department: {
-              type: 'string',
-              description: 'Department ID',
-              example: '507f1f77bcf86cd799439012',
-            },
             unit: {
               type: 'string',
-              description: 'Unit ID',
+              description: 'Unit ID (optional - if provided, must belong to the specified department)',
               example: '507f1f77bcf86cd799439013',
+            },
+            department: {
+              type: 'string',
+              description: 'Department ID (required - must belong to the specified station)',
+              example: '507f1f77bcf86cd799439016',
             },
             role: {
               type: 'string',
@@ -1187,8 +1259,13 @@ Tokens are valid for 24 hours after login.
             },
             station_id: {
               type: 'string',
-              description: 'Station ID',
+              description: 'Station ID (required - department must belong to this station)',
               example: '507f1f77bcf86cd799439015',
+            },
+            tempPassword: {
+              type: 'string',
+              description: 'Temporary password (optional - auto-generated if not provided)',
+              example: 'TEMP1234',
             },
           },
         },
@@ -1225,43 +1302,6 @@ Tokens are valid for 24 hours after login.
               type: 'string',
               description: 'Department ID',
               example: '507f1f77bcf86cd799439011',
-            },
-            groups: {
-              type: 'array',
-              description: 'Array of group assignments. Can be array of group IDs (will use unit color) or array of objects {groupId, color}.',
-              items: {
-                oneOf: [
-                  {
-                    type: 'string',
-                    description: 'Group ID (color will default to unit color)',
-                    example: '507f1f77bcf86cd799439020',
-                  },
-                  {
-                    type: 'object',
-                    properties: {
-                      groupId: {
-                        type: 'string',
-                        description: 'Group ID',
-                        example: '507f1f77bcf86cd799439020',
-                      },
-                      color: {
-                        type: 'string',
-                        description: 'Group color for this unit',
-                        example: '#FF0000',
-                      },
-                    },
-                  },
-                ],
-              },
-              example: [
-                '507f1f77bcf86cd799439020',
-                { groupId: '507f1f77bcf86cd799439021', color: '#00FF00' },
-              ],
-            },
-            shift: {
-              type: 'string',
-              description: 'Shift identifier (required for Operations department units)',
-              example: 'Day',
             },
           },
         },
@@ -1449,6 +1489,92 @@ Tokens are valid for 24 hours after login.
             },
             admin: {
               $ref: '#/components/schemas/SuperAdmin',
+            },
+          },
+        },
+        StationAdminCreateRequest: {
+          type: 'object',
+          required: ['username', 'email', 'station_id'],
+          properties: {
+            username: {
+              type: 'string',
+              description: 'Admin username',
+              example: 'station_admin1',
+            },
+            tempPassword: {
+              type: 'string',
+              minLength: 6,
+              description: 'Optional temporary password. If not provided, a random 8-character password will be generated.',
+              example: 'TEMP1234',
+            },
+            name: {
+              type: 'string',
+              description: 'Admin full name',
+              example: 'John Doe',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Admin email',
+              example: 'john.doe@station1.gov.gh',
+            },
+            station_id: {
+              type: 'string',
+              description: 'Station ID this admin will manage',
+              example: '507f1f77bcf86cd799439012',
+            },
+          },
+        },
+        StationAdminLoginRequest: {
+          type: 'object',
+          required: ['username', 'password'],
+          properties: {
+            username: {
+              type: 'string',
+              description: 'Admin username',
+              example: 'station_admin1',
+            },
+            password: {
+              type: 'string',
+              description: 'Admin password',
+              example: 'securePassword123',
+            },
+          },
+        },
+        StationAdminResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            message: {
+              type: 'string',
+              example: 'Station admin created successfully',
+            },
+            data: {
+              $ref: '#/components/schemas/StationAdmin',
+            },
+          },
+        },
+        StationAdminAuthResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true,
+            },
+            message: {
+              type: 'string',
+              example: 'Login successful',
+            },
+            token: {
+              type: 'string',
+              description: 'JWT token for authentication',
+              example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            },
+            data: {
+              $ref: '#/components/schemas/StationAdmin',
             },
           },
         },

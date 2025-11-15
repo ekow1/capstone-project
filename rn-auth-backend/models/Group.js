@@ -14,13 +14,9 @@ const groupSchema = new mongoose.Schema({
 });
 
 // Virtual for units that have this group
-groupSchema.virtual('units', {
-    ref: 'Unit',
-    localField: '_id',
-    foreignField: 'groups'
-});
+// Groups are no longer linked to units, so virtual removed
 
-// Index for efficient queries
+// Indexes for efficient queries
 groupSchema.index({ name: 1 }, { unique: true });
 
 export default mongoose.model('Group', groupSchema);

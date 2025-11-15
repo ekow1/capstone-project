@@ -120,17 +120,7 @@ export const updateGroup = async (req, res) => {
 // Delete Group
 export const deleteGroup = async (req, res) => {
     try {
-        // Check if group is being used by any units
-        const Unit = mongoose.model('Unit');
-        const unitsUsingGroup = await Unit.find({ 'groups.groupId': req.params.id });
-
-        if (unitsUsingGroup.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: `Cannot delete group. It is currently assigned to ${unitsUsingGroup.length} unit(s).`,
-                unitsCount: unitsUsingGroup.length
-            });
-        }
+        // Groups are no longer linked to units, so no need to check for unit assignments
 
         const group = await Group.findByIdAndDelete(req.params.id);
 

@@ -4,7 +4,8 @@ import {
     getAllDepartments,
     getDepartmentById,
     updateDepartment,
-    deleteDepartment
+    deleteDepartment,
+    getDepartmentsByStation
 } from '../controllers/departmentController.js';
 
 const router = express.Router();
@@ -13,7 +14,7 @@ const router = express.Router();
  * @swagger
  * tags:
  *   - name: Departments
- *     description: Universal department management. Departments are shared across all stations. Supports CRUD operations.
+ *     description: Department management. Each department belongs to a station. A station can have many departments. Supports CRUD operations.
  */
 
 /**
@@ -22,7 +23,7 @@ const router = express.Router();
  *   post:
  *     summary: Create a new department
  *     tags: [Departments]
- *     description: Create a new universal department (shared across all stations)
+ *     description: Create a new department for a specific station
  *     requestBody:
  *       required: true
  *       content:
@@ -49,7 +50,13 @@ router.post('/', createDepartment);
  *   get:
  *     summary: Get all departments
  *     tags: [Departments]
- *     description: Retrieve all universal departments
+ *     description: Retrieve all departments. Optionally filter by station_id query parameter.
+ *     parameters:
+ *       - in: query
+ *         name: station_id
+ *         schema:
+ *           type: string
+ *         description: Filter departments by station ID
  *     responses:
  *       200:
  *         description: List of departments
@@ -133,6 +140,9 @@ router.get('/:id', getDepartmentById);
  *                 type: string
  *               description:
  *                 type: string
+ *               station_id:
+ *                 type: string
+ *                 description: Station ID (required)
  *     responses:
  *       200:
  *         description: Department updated successfully
@@ -183,6 +193,47 @@ router.put('/:id', updateDepartment);
  *         description: Server error
  */
 router.delete('/:id', deleteDepartment);
+
+/**
+ * @swagger
+ * /api/fire/departments/station/{stationId}:
+ *   get:
+ *     summary: Get departments by station ID
+ *     tags: [Departments]
+ *     description: Retrieve all departments for a specific station
+ *     parameters:
+ *       - in: path
+ *         name: stationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Station ID
+ *     responses:
+ *       200:
+ *         description: List of departments for the station
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 count:
+ *                   type: number
+ *                   example: 3
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Department'
+ *       400:
+ *         description: Invalid station ID format
+ *       404:
+ *         description: Station not found
+ *       500:
+ *         description: Server error
+ */
+router.get('/station/:stationId', getDepartmentsByStation);
 
 export default router;
 

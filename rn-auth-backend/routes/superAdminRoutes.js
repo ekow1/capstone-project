@@ -2,6 +2,7 @@ import express from 'express';
 import {
     createSuperAdmin,
     loginSuperAdmin,
+    logoutSuperAdmin,
     getAllSuperAdmins,
     getSuperAdminById,
     updateSuperAdmin,
@@ -104,6 +105,32 @@ router.post('/register', createSuperAdmin);
  *         description: Server error
  */
 router.post('/login', loginSuperAdmin);
+
+/**
+ * @swagger
+ * /api/super-admin/logout:
+ *   post:
+ *     summary: Logout super admin
+ *     tags: [Super Admin]
+ *     description: Logout a super administrator by clearing the authentication cookie
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
+ *       500:
+ *         description: Server error
+ */
+router.post('/logout', logoutSuperAdmin);
 
 /**
  * @swagger

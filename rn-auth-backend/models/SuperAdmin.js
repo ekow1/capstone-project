@@ -12,10 +12,7 @@ const superAdminSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Password is required']
     },
-    name: {
-        type: String,
-        required: [true, 'Name is required']
-    },
+   
     email: {
         type: String,
         required: [true, 'Email is required'],
@@ -26,7 +23,8 @@ const superAdminSchema = new mongoose.Schema({
     // Optional fields for managing departments and stations
     managedDepartments: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Department'
+        ref: 'Department',
+        required: false
     }],
     managedStations: [{
         type: String
@@ -37,7 +35,7 @@ const superAdminSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['super_admin'],
+        enum: ['super_admin','admin'],
         default: 'super_admin'
     }
 }, { 

@@ -9,6 +9,11 @@ const departmentSchema = new mongoose.Schema({
     description: {
         type: String,
         required: false
+    },
+    station_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Station',
+        required: [true, 'Station is required']
     }
 }, { 
     timestamps: true,
@@ -20,11 +25,21 @@ const departmentSchema = new mongoose.Schema({
 departmentSchema.virtual('units', {
     ref: 'Unit',
     localField: '_id',
-    foreignField: 'department'
+    foreignField: 'department',
+    options: { sort: { name: 1 } }
 });
 
-// Index for efficient queries
-departmentSchema.index({ name: 1 }, { unique: true });
+// Virtual for personnel in this department
+departmentSchema.virtual('personnel', {
+    ref: 'FirePersonnel',
+    localField: '_id',
+    foreignField: 'department',
+    options: { sort: { name: 1 } }
+});
+
+// Indexes for efficient queries
+departmentSchema.index({ name: 1, station_id: 1 }, { unique: true }); // Unique department name per station
+departmentSchema.index({ station_id: 1 }); // Index for station-based queries
 
 export default mongoose.model('Department', departmentSchema);
 

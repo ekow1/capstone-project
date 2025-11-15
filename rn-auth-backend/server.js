@@ -12,6 +12,7 @@ import groupRoutes from './routes/groupRoutes.js';
 import roleRoutes from './routes/roleRoutes.js';
 import rankRoutes from './routes/rankRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
+import stationAdminRoutes from './routes/stationAdminRoutes.js';
 import fireReportRoutes from './routes/fireReportRoutes.js';
 import verifyToken from './middleware/verifyToken.js';
 import { swaggerUi, specs } from './swagger.js';
@@ -23,8 +24,11 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: ['http://localhost:3000','http://localhost:3001','http://localhost:3002','http://localhost:3003','http://localhost:3004','http://localhost:3005','http://localhost:3006','http://localhost:3007','http://localhost:3008','http://localhost:3009','http://localhost:3010'],
-    credentials: true
+    origin: ['http://localhost:3000', 'http://localhost:3001','https://gnfs.ekowlabs.space'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    optionsSuccessStatus: 200
 }));
 app.use(express.json());
 
@@ -51,6 +55,10 @@ app.use('/api/fire/reports', fireReportRoutes);
 // Super Admin routes (mixed - some public, some protected)
 // The routes file handles which ones need auth
 app.use('/api/super-admin', superAdminRoutes);
+
+// Station Admin routes (mixed - some public, some protected)
+// The routes file handles which ones need auth
+app.use('/api/station-admin', stationAdminRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ 

@@ -8,9 +8,7 @@ import {
     getFireReportsByStation,
     getFireReportsByUser,
     getFireReportStats,
-    dispatchFireReport,
-    declineFireReport,
-    referFireReport
+    
 } from '../controllers/fireReportController.js';
 const router = express.Router();
 
@@ -226,9 +224,6 @@ const router = express.Router();
  *                 phone:
  *                   type: string
  *                   example: "030 250 1744"
- *         userId:
- *           type: string
- *           example: "507f1f77bcf86cd799439011"
  *         description:
  *           type: string
  *           example: "Fire reported in 3-story building"
