@@ -72,6 +72,10 @@ export const loginSuperAdmin = async (req, res) => {
             });
         }
 
+        console.log('username', username);
+        console.log('password', password);
+        console.log('req.body', req.body);
+
         // Find admin by username
         const admin = await SuperAdmin.findOne({ username: username.toLowerCase() });
         
@@ -81,6 +85,8 @@ export const loginSuperAdmin = async (req, res) => {
                 message: 'Invalid credentials' 
             });
         }
+
+    
 
         // Check if admin is active
         if (!admin.isActive) {
