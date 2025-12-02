@@ -304,7 +304,7 @@ export const updateEmergencyAlert = async (req, res) => {
                         } else {
                             console.log(`✅ Step 4 Complete: Found active unit: ${activeUnit.name} (${activeUnit._id})`);
                             
-                            // Create incident with status 'active' (default)
+                            // Create incident with status 'pending' when alert is accepted
                             // Use the stationId we already extracted and validated
                             console.log(`🔍 Step 5: Creating incident object...`);
                             const incidentData = {
@@ -312,7 +312,7 @@ export const updateEmergencyAlert = async (req, res) => {
                                 station: stationId, // Use the validated stationId
                                 departmentOnDuty: operationsDepartment._id,
                                 unitOnDuty: activeUnit._id,
-                                status: 'active' // Default status - active
+                                status: 'pending' // Status is pending when alert is accepted
                             };
                             
                             console.log(`   📝 Incident data to create:`, {
@@ -858,7 +858,7 @@ export const dispatchEmergencyAlert = async (req, res) => {
                         } else {
                             console.log(`✅ Step 4 Complete: Found active unit: ${activeUnit.name} (${activeUnit._id})`);
                             
-                            // Create incident with status 'active' (default)
+                            // Create incident with status 'pending' when alert is accepted
                             // Use the stationId we already extracted and validated
                             console.log(`🔍 Step 5: Creating incident object...`);
                             const incidentData = {
@@ -866,7 +866,7 @@ export const dispatchEmergencyAlert = async (req, res) => {
                                 station: stationId, // Use the validated stationId
                                 departmentOnDuty: operationsDepartment._id,
                                 unitOnDuty: activeUnit._id,
-                                status: 'active' // Default status - active
+                                status: 'pending' // Status is pending when alert is accepted
                             };
                             
                             console.log(`   📝 Incident data to create:`, {

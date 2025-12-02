@@ -24,10 +24,10 @@ const incidentSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: {
-            values: ['active', 'dispatched', 'on_scene', 'resolved', 'closed', 'referred'],
-            message: 'Status must be one of: active, dispatched, on_scene, resolved, closed, referred'
+            values: ['pending', 'active', 'dispatched', 'on_scene', 'resolved', 'closed', 'referred'],
+            message: 'Status must be one of: pending, active, dispatched, on_scene, resolved, closed, referred'
         },
-        default: 'active'
+        default: 'pending'
     },
     // Turnout slip - generated when incident is dispatched
     turnoutSlip: {
@@ -223,6 +223,9 @@ incidentSchema.pre('save', async function(next) {
             const now = new Date();
             
             switch (this.status) {
+                case 'active':
+                    // No special action for active status
+                    break;
                 case 'dispatched':
                     if (!this.dispatchedAt) {
                         this.dispatchedAt = now;

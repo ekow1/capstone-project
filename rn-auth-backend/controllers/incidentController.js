@@ -91,7 +91,7 @@ export const createIncident = async (req, res) => {
             station: incidentStationId, // Add station ID from alert
             departmentOnDuty,
             unitOnDuty,
-            status: status || 'active',
+            status: status || 'pending',
             dispatchedAt,
             arrivedAt,
             resolvedAt,
@@ -107,7 +107,7 @@ export const createIncident = async (req, res) => {
                 // Check if there are any active incidents for this station
                 const activeIncidentsCount = await Incident.countDocuments({
                     station: stationId,
-                    status: { $in: ['active', 'dispatched', 'on_scene'] }
+                    status: { $in: ['pending', 'active', 'dispatched', 'on_scene'] }
                 });
                 
                 await Station.findByIdAndUpdate(stationId, {
@@ -315,7 +315,7 @@ export const updateIncident = async (req, res) => {
                 // Check if there are any active incidents for this station
                 const activeIncidentsCount = await Incident.countDocuments({
                     station: stationId,
-                    status: { $in: ['active', 'dispatched', 'on_scene'] }
+                    status: { $in: ['pending', 'active', 'dispatched', 'on_scene'] }
                 });
                 
                 await Station.findByIdAndUpdate(stationId, {
@@ -380,7 +380,7 @@ export const updateIncidentStatus = async (req, res) => {
             });
         }
 
-        const validStatuses = ['active', 'dispatched', 'on_scene', 'resolved', 'closed'];
+        const validStatuses = ['pending', 'active', 'dispatched', 'on_scene', 'resolved', 'closed'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({
                 success: false,
@@ -433,7 +433,7 @@ export const updateIncidentStatus = async (req, res) => {
                 // Check if there are any active incidents for this station
                 const activeIncidentsCount = await Incident.countDocuments({
                     station: stationId,
-                    status: { $in: ['active', 'dispatched', 'on_scene'] }
+                    status: { $in: ['pending', 'active', 'dispatched', 'on_scene'] }
                 });
                 
                 await Station.findByIdAndUpdate(stationId, {
@@ -508,7 +508,7 @@ export const deleteIncident = async (req, res) => {
                 // Check if there are any active incidents for this station
                 const activeIncidentsCount = await Incident.countDocuments({
                     station: stationId,
-                    status: { $in: ['active', 'dispatched', 'on_scene'] }
+                    status: { $in: ['pending', 'active', 'dispatched', 'on_scene'] }
                 });
                 
                 await Station.findByIdAndUpdate(stationId, {
@@ -653,6 +653,9 @@ export const getIncidentStats = async (req, res) => {
                 $group: {
                     _id: null,
                     totalIncidents: { $sum: 1 },
+                    pendingIncidents: {
+                        $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+                    },
                     activeIncidents: {
                         $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
                     },
@@ -692,6 +695,7 @@ export const getIncidentStats = async (req, res) => {
 
         const result = stats[0] || {
             totalIncidents: 0,
+            pendingIncidents: 0,
             activeIncidents: 0,
             dispatchedIncidents: 0,
             onSceneIncidents: 0,
