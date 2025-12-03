@@ -203,10 +203,16 @@ export const emitAlertUpdated = (alertData) => {
         socketIO.emit('alert_updated', payload);
         console.log('📡 Broadcasted alert_updated event:', payload.incidentName);
 
+        // Determine target station for room emission
+        let targetStationId = stationId;
+        if (alertData.status === 'referred' && alertData.referredToStation) {
+            targetStationId = alertData.referredToStation._id?.toString() || alertData.referredToStation.toString();
+        }
+
         // Also emit to specific station room if station is available
-        if (stationId) {
-            socketIO.to(`station_${stationId}`).emit('alert_updated', payload);
-            console.log(`📡 Broadcasted alert_updated to station room: ${stationId}`);
+        if (targetStationId) {
+            socketIO.to(`station_${targetStationId}`).emit('alert_updated', payload);
+            console.log(`📡 Broadcasted alert_updated to station room: ${targetStationId}`);
         }
 
     } catch (error) {
@@ -277,7 +283,7 @@ export const emitNewIncident = (incidentData) => {
 export const emitIncidentUpdated = (incidentData) => {
     try {
         const socketIO = getIO();
-        
+
         // Extract station ID for room-based broadcasting
         let stationId = null;
         if (incidentData.station) {
@@ -285,14 +291,20 @@ export const emitIncidentUpdated = (incidentData) => {
         } else if (incidentData.alertId?.station) {
             stationId = incidentData.alertId.station._id?.toString() || incidentData.alertId.station.toString();
         }
-        
+
+        // Determine target station for room emission
+        let targetStationId = stationId;
+        if (incidentData.status === 'referred' && incidentData.referredToStation) {
+            targetStationId = incidentData.referredToStation._id?.toString() || incidentData.referredToStation.toString();
+        }
+
         const payload = {
             _id: incidentData._id ? incidentData._id.toString() : null,
             alertId: incidentData.alertId ? incidentData.alertId.toString() : null,
             departmentOnDuty: incidentData.departmentOnDuty ? incidentData.departmentOnDuty.toString() : null,
             unitOnDuty: incidentData.unitOnDuty ? incidentData.unitOnDuty.toString() : null,
             status: incidentData.status || null,
-            stationId: stationId,
+            stationId: targetStationId, // Use target station ID in payload
             dispatchedAt: incidentData.dispatchedAt ? new Date(incidentData.dispatchedAt).toISOString() : null,
             arrivedAt: incidentData.arrivedAt ? new Date(incidentData.arrivedAt).toISOString() : null,
             resolvedAt: incidentData.resolvedAt ? new Date(incidentData.resolvedAt).toISOString() : null,
@@ -305,23 +317,23 @@ export const emitIncidentUpdated = (incidentData) => {
         // Broadcast to all connected clients
         socketIO.emit('incident_updated', payload);
         console.log('📡 Broadcasted incident_updated event:', payload._id);
-        
+
         // If status is dispatched and turnout slip exists, emit dedicated turnout slip event
         if (incidentData.status === 'dispatched' && incidentData.turnoutSlip) {
             socketIO.emit('turnout_slip_dispatched', payload);
             console.log('📡 Broadcasted turnout_slip_dispatched event:', payload._id);
-            
+
             // Also emit to specific station room if station is available
-            if (stationId) {
-                socketIO.to(`station_${stationId}`).emit('turnout_slip_dispatched', payload);
-                console.log(`📡 Broadcasted turnout_slip_dispatched to station room: ${stationId}`);
+            if (targetStationId) {
+                socketIO.to(`station_${targetStationId}`).emit('turnout_slip_dispatched', payload);
+                console.log(`📡 Broadcasted turnout_slip_dispatched to station room: ${targetStationId}`);
             }
         }
 
         // Also emit to specific station room if station is available
-        if (stationId) {
-            socketIO.to(`station_${stationId}`).emit('incident_updated', payload);
-            console.log(`📡 Broadcasted incident_updated to station room: ${stationId}`);
+        if (targetStationId) {
+            socketIO.to(`station_${targetStationId}`).emit('incident_updated', payload);
+            console.log(`📡 Broadcasted incident_updated to station room: ${targetStationId}`);
         }
 
     } catch (error) {
