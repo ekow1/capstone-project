@@ -2,7 +2,6 @@ import FirePersonnel from '../models/FirePersonnel.js';
 import Unit from '../models/Unit.js';
 import Department from '../models/Department.js';
 import Station from '../models/Station.js';
-import Role from '../models/Role.js';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -17,27 +16,6 @@ const getUserIdFromToken = (req) => {
     } catch (err) {
         return null;
     }
-};
-
-// Helper function to convert role (string name or ObjectId) to ObjectId
-const resolveRoleId = async (role) => {
-    if (!role) return null;
-    
-    // If it's already a valid ObjectId, return it
-    if (mongoose.Types.ObjectId.isValid(role)) {
-        return role;
-    }
-    
-    // If it's a string (role name), look it up
-    if (typeof role === 'string') {
-        const roleDoc = await Role.findOne({ name: { $regex: new RegExp(`^${role}$`, 'i') } });
-        if (!roleDoc) {
-            throw new Error(`Role "${role}" not found`);
-        }
-        return roleDoc._id;
-    }
-    
-    return null;
 };
 
 // Create FirePersonnel
@@ -133,26 +111,13 @@ export const createFirePersonnel = async (req, res) => {
             }
         }
 
-        // Resolve role (convert string name to ObjectId if needed)
-        let roleId = null;
-        if (role) {
-            try {
-                roleId = await resolveRoleId(role);
-            } catch (error) {
-                return res.status(400).json({
-                    success: false,
-                    message: error.message
-                });
-            }
-        }
-
         const personnel = new FirePersonnel({
             serviceNumber,
             name, 
             rank, 
             unit, 
             department,
-            role: roleId, 
+            role: role || 'Officer in charge (OIC)', 
             station_id, 
             tempPassword: hashedTempPassword,
             tempPasswordExpiry: tempPasswordExpiry,
@@ -167,7 +132,6 @@ export const createFirePersonnel = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id');
 
         res.status(201).json({
@@ -219,7 +183,6 @@ export const getAllFirePersonnel = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id')
             .sort({ name: 1 });
 
@@ -256,7 +219,6 @@ export const getCurrentFirePersonnel = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id');
 
         if (!personnel) {
@@ -306,7 +268,6 @@ export const getFirePersonnelById = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id');
 
         if (!personnel) {
@@ -446,17 +407,10 @@ export const updateFirePersonnel = async (req, res) => {
             }
         }
 
-        // Resolve role (convert string name to ObjectId if needed)
+        // Handle role as string
         const updateData = { ...req.body };
         if (role !== undefined) {
-            try {
-                updateData.role = await resolveRoleId(role);
-            } catch (error) {
-                return res.status(400).json({
-                    success: false,
-                    message: error.message
-                });
-            }
+            updateData.role = role || 'Officer in charge (OIC)';
         }
 
         const personnel = await FirePersonnel.findByIdAndUpdate(
@@ -470,7 +424,6 @@ export const updateFirePersonnel = async (req, res) => {
             populate: { path: 'department' }
         })
         .populate('department')
-        .populate('role')
         .populate('station_id');
 
         if (!personnel) {
@@ -543,7 +496,6 @@ export const getPersonnelByUnit = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id')
             .sort({ name: 1 });
 
@@ -579,7 +531,6 @@ export const getPersonnelByDepartment = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id')
             .sort({ name: 1 });
 
@@ -614,7 +565,6 @@ export const getPersonnelByStation = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id')
             .sort({ name: 1 });
 
@@ -664,7 +614,6 @@ export const loginFirePersonnel = async (req, res) => {
                 populate: { path: 'department' }
             })
             .populate('department')
-            .populate('role')
             .populate('station_id');
 
         if (!personnel) {

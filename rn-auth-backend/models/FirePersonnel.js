@@ -28,8 +28,8 @@ const firePersonnelSchema = new mongoose.Schema({
         required: [true, 'Department is required']
     },
     role: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Role',
+        type: String,
+        default: 'Officer in charge (OIC)',
         required: false
     },
     station_id: {
