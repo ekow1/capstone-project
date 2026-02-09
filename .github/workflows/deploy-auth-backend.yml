@@ -38,7 +38,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         script: |
           echo "🔍 Checking if server is already set up..."
@@ -70,7 +70,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         source: "rn-auth-backend/install.sh"
         target: "/home/${{ secrets.AI_BACKEND_USER }}/install-auth.sh"
@@ -81,7 +81,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         script: |
           chmod +x ~/install-auth.sh/rn-auth-backend/install.sh
@@ -92,7 +92,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         script: |
           echo "🔄 Verifying Caddy configuration for auth.ekowlabs.space..."
@@ -207,7 +207,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         source: "auth-backend.tar.gz"
         target: "/tmp/"
@@ -217,7 +217,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         script: |
           echo "📁 Creating backend directory..."
@@ -307,7 +307,7 @@ jobs:
       with:
         host: ${{ secrets.AUTH_HOST }}
         username: ${{ secrets.AI_BACKEND_USER }}
-        key: ${{ secrets.SP_SSH_KEY }}
+        key: ${{ secrets.AUTH_SECRET }}
         port: 22
         script: |
           cd ~/school-project/backend/rn-auth-backend
