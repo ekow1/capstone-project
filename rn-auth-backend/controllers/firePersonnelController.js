@@ -21,15 +21,18 @@ const getUserIdFromToken = (req) => {
 // Create FirePersonnel
 export const createFirePersonnel = async (req, res) => {
     try {
-        const { serviceNumber, name, rank, unit, department, role, station_id, password } = req.body;
-        
+        const { serviceNumber, name, rank, unit, department, role, station_id, tempPassword } = req.body;
+
+        // Use tempPassword as password if provided, otherwise require password
+        const password = tempPassword || req.body.password;
+
         if (!serviceNumber || !station_id || !department || !password) {
             return res.status(400).json({
                 success: false,
                 message: 'Service number, station_id, department, and password are required'
             });
         }
-        
+
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -102,12 +105,12 @@ export const createFirePersonnel = async (req, res) => {
 
         const personnel = new FirePersonnel({
             serviceNumber,
-            name, 
-            rank, 
-            unit, 
+            name,
+            rank,
+            unit,
             department,
-            role: role || 'Officer in charge (OIC)', 
-            station_id, 
+            role: role || 'Officer in charge (OIC)',
+            station_id,
             password: hashedPassword
         });
         await personnel.save();
@@ -188,11 +191,11 @@ export const getAllFirePersonnel = async (req, res) => {
 export const getCurrentFirePersonnel = async (req, res) => {
     try {
         const userId = getUserIdFromToken(req);
-        
+
         if (!userId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized - Invalid or missing token' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized - Invalid or missing token'
             });
         }
 
@@ -207,20 +210,20 @@ export const getCurrentFirePersonnel = async (req, res) => {
             .populate('station_id');
 
         if (!personnel) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Fire personnel not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Fire personnel not found'
             });
         }
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             data: personnel
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
@@ -285,7 +288,7 @@ export const updateFirePersonnel = async (req, res) => {
         }
 
         const { unit, department, station_id, role } = req.body;
-        
+
         // Determine the station_id to use (new or existing)
         const targetStationId = station_id || currentPersonnel.station_id;
         const targetDepartment = department || currentPersonnel.department;
@@ -393,13 +396,13 @@ export const updateFirePersonnel = async (req, res) => {
             updateData,
             { new: true, runValidators: true }
         )
-        .populate('rank')
-        .populate({
-            path: 'unit',
-            populate: { path: 'department' }
-        })
-        .populate('department')
-        .populate('station_id');
+            .populate('rank')
+            .populate({
+                path: 'unit',
+                populate: { path: 'department' }
+            })
+            .populate('department')
+            .populate('station_id');
 
         if (!personnel) {
             return res.status(404).json({
@@ -572,8 +575,8 @@ export const loginFirePersonnel = async (req, res) => {
         const normalizedServiceNumber = String(serviceNumber || '').trim();
 
         // Find personnel by serviceNumber (case-insensitive if needed, but serviceNumber should be exact)
-        const personnel = await FirePersonnel.findOne({ 
-            serviceNumber: normalizedServiceNumber 
+        const personnel = await FirePersonnel.findOne({
+            serviceNumber: normalizedServiceNumber
         })
             .select('+password')
             .populate('rank')
@@ -656,16 +659,16 @@ export const changePassword = async (req, res) => {
         const { oldPassword, newPassword } = req.body;
 
         if (!oldPassword || !newPassword) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Old password and new password are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Old password and new password are required'
             });
         }
 
         if (newPassword.length < 6) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'New password must be at least 6 characters long' 
+            return res.status(400).json({
+                success: false,
+                message: 'New password must be at least 6 characters long'
             });
         }
 
@@ -673,19 +676,19 @@ export const changePassword = async (req, res) => {
             .select('+password');
 
         if (!personnel) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Fire personnel not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Fire personnel not found'
             });
         }
 
         // Verify old password
         const isValidPassword = await bcrypt.compare(oldPassword, personnel.password);
-        
+
         if (!isValidPassword) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Old password is incorrect' 
+            return res.status(401).json({
+                success: false,
+                message: 'Old password is incorrect'
             });
         }
 
@@ -693,14 +696,14 @@ export const changePassword = async (req, res) => {
         personnel.password = await bcrypt.hash(newPassword, 10);
         await personnel.save();
 
-        res.status(200).json({ 
-            success: true, 
-            message: 'Password changed successfully' 
+        res.status(200).json({
+            success: true,
+            message: 'Password changed successfully'
         });
     } catch (error) {
-        res.status(500).json({ 
-            success: false, 
-            message: error.message 
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
 };
